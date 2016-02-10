@@ -11,8 +11,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package log offers cross platform logging for Windows and Linux.
-// Available logging enpoints are event log (Windows), syslog (Linux), and file.
+// Package logger offers simple cross platform logging for Windows and Linux.
+// Available logging endpoints are event log (Windows), syslog (Linux), and 
+// an io.Writer.
 package logger
 
 import (
