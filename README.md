@@ -9,7 +9,7 @@ This is not an official Google product.
 Set up logger to log the system log (event log or syslog) and a file, 
 include a flag to turn up verbosity:
 
-```
+```go
 import (
   "flag"
   "os"
