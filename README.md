@@ -26,15 +26,15 @@ func main() {
 
   lf, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
   if err != nil {
-    log.Fatalf("Failed to open log file: %v", err)
+    logger.Fatalf("Failed to open log file: %v", err)
   }
   defer lf.Close()
 
-  log.Init("LoggerExample", *verbose, true, lf)
+  logger.Init("LoggerExample", *verbose, true, lf)
 
-  log.Info("I'm about to do something!")
+  logger.Info("I'm about to do something!")
   if err := doSomething(); err != nil {
-    log.Errorf("Error running doSomething: %v", err)
+    logger.Errorf("Error running doSomething: %v", err)
   }
 }
 ```
