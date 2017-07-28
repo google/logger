@@ -38,8 +38,11 @@ func (w *writer) Write(b []byte) (int, error) {
 }
 
 func newW(pri severity, src string) (*writer, error) {
+	// Continue if we receive "registry key already exists" or if we get
+	// "Access is Denied" so that we can log without administrative permissions
+	// for pre-existing eventlog sources.
 	if err := eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Error); err != nil {
-		if !strings.Contains(err.Error(), "registry key already exists") {
+		if !strings.Contains(err.Error(), "registry key already exists") && !strings.Contains(err.Error(), "Access is denied") {
 			return nil, err
 		}
 	}

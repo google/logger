@@ -12,7 +12,7 @@ limitations under the License.
 */
 
 // Package logger offers simple cross platform logging for Windows and Linux.
-// Available logging endpoints are event log (Windows), syslog (Linux), and 
+// Available logging endpoints are event log (Windows), syslog (Linux), and
 // an io.Writer.
 package logger
 
@@ -25,17 +25,21 @@ import (
 )
 
 var (
-	infoLog     *log.Logger
-	errorLog    *log.Logger
-	fatalLog    *log.Logger
-	logLock     sync.Mutex
-	initialized bool
+	defaultLogger *logger
+	initialized   bool
 )
 
+func init() {
+	defaultLogger = &logger{}
+}
+
 // Init sets up logging and should be called before log functions, usually in
-// the callers main(). Log functions can be called before Init(), but log
+// the callers main(). Default log functions can be called before Init(), but log
 // output will only go to stderr (along with a warning).
-func Init(name string, verbose, systemLog bool, logFile io.Writer) {
+// The first call to Init populates the default logger and returns the
+// generated logger, subsequent calls to Init will only return the generated
+// logger.
+func Init(name string, verbose, systemLog bool, logFile io.Writer) *logger {
 	var il, el io.Writer
 	if systemLog {
 		var err error
@@ -58,10 +62,18 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) {
 	}
 
 	flags := log.Ldate | log.Lmicroseconds | log.Lshortfile
-	infoLog = log.New(io.MultiWriter(iLogs...), "INFO: ", flags)
-	errorLog = log.New(io.MultiWriter(eLogs...), "ERROR: ", flags)
-	fatalLog = log.New(io.MultiWriter(eLogs...), "FATAL: ", flags)
-	initialized = true
+
+	var l logger
+	l.infoLog = log.New(io.MultiWriter(iLogs...), "INFO: ", flags)
+	l.errorLog = log.New(io.MultiWriter(eLogs...), "ERROR: ", flags)
+	l.fatalLog = log.New(io.MultiWriter(eLogs...), "FATAL: ", flags)
+
+	if !initialized {
+		defaultLogger = &l
+		initialized = true
+	}
+
+	return &l
 }
 
 type severity int
@@ -72,9 +84,16 @@ const (
 	sFatal
 )
 
-func output(s severity, txt string) {
-	logLock.Lock()
-	defer logLock.Unlock()
+type logger struct {
+	infoLog  *log.Logger
+	errorLog *log.Logger
+	fatalLog *log.Logger
+	logLock  sync.Mutex
+}
+
+func (l *logger) output(s severity, txt string) {
+	l.logLock.Lock()
+	defer l.logLock.Unlock()
 	initText := "ERROR: Logging before logger.Init."
 	switch s {
 	case sInfo:
@@ -82,19 +101,19 @@ func output(s severity, txt string) {
 			fmt.Fprintf(os.Stderr, "%s\nINFO: %s\n", initText, txt)
 			return
 		}
-		infoLog.Output(3, txt)
+		l.infoLog.Output(3, txt)
 	case sError:
 		if !initialized {
 			fmt.Fprintf(os.Stderr, "%s\nERROR: %s\n", initText, txt)
 			return
 		}
-		errorLog.Output(3, txt)
+		l.errorLog.Output(3, txt)
 	case sFatal:
 		if !initialized {
 			fmt.Fprintf(os.Stderr, "%s\nFATAL: %s\n", initText, txt)
 			return
 		}
-		fatalLog.Output(3, txt)
+		l.fatalLog.Output(3, txt)
 	default:
 		panic(fmt.Sprintln("unrecognized severity:", s))
 	}
@@ -102,57 +121,102 @@ func output(s severity, txt string) {
 
 // Info logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Print.
-func Info(v ...interface{}) {
-	output(sInfo, fmt.Sprint(v...))
+func (l *logger) Info(v ...interface{}) {
+	l.output(sInfo, fmt.Sprint(v...))
 }
 
 // Infoln logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Println.
-func Infoln(v ...interface{}) {
-	output(sInfo, fmt.Sprintln(v...))
+func (l *logger) Infoln(v ...interface{}) {
+	l.output(sInfo, fmt.Sprintln(v...))
 }
 
 // Infof logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Printf.
-func Infof(format string, v ...interface{}) {
-	output(sInfo, fmt.Sprintf(format, v...))
+func (l *logger) Infof(format string, v ...interface{}) {
+	l.output(sInfo, fmt.Sprintf(format, v...))
 }
 
 // Error logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Print.
-func Error(v ...interface{}) {
-	output(sError, fmt.Sprint(v...))
+func (l *logger) Error(v ...interface{}) {
+	l.output(sError, fmt.Sprint(v...))
 }
 
 // Errorln logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Println.
-func Errorln(v ...interface{}) {
-	output(sError, fmt.Sprintln(v...))
+func (l *logger) Errorln(v ...interface{}) {
+	l.output(sError, fmt.Sprintln(v...))
 }
 
 // Errorf logs with the Error severity.
 // Arguments are handled in the manner of fmt.Printf.
-func Errorf(format string, v ...interface{}) {
-	output(sError, fmt.Sprintf(format, v...))
+func (l *logger) Errorf(format string, v ...interface{}) {
+	l.output(sError, fmt.Sprintf(format, v...))
 }
 
 // Fatal logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Print.
-func Fatal(v ...interface{}) {
-	output(sFatal, fmt.Sprint(v...))
+func (l *logger) Fatal(v ...interface{}) {
+	l.output(sFatal, fmt.Sprint(v...))
 	os.Exit(1)
 }
 
 // Fatalln logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Println.
-func Fatalln(v ...interface{}) {
-	output(sFatal, fmt.Sprintln(v...))
+func (l *logger) Fatalln(v ...interface{}) {
+	l.output(sFatal, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
 // Fatalf logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Printf.
-func Fatalf(format string, v ...interface{}) {
-	output(sFatal, fmt.Sprintf(format, v...))
+func (l *logger) Fatalf(format string, v ...interface{}) {
+	l.output(sFatal, fmt.Sprintf(format, v...))
 	os.Exit(1)
+}
+
+// Info calls the default loggers Info.
+func Info(v ...interface{}) {
+	defaultLogger.Info(v...)
+}
+
+// Infoln calls the default loggers Infoln.
+func Infoln(v ...interface{}) {
+	defaultLogger.Infoln(v...)
+}
+
+// Infof calls the default loggers Infof.
+func Infof(format string, v ...interface{}) {
+	defaultLogger.Infof(format, v...)
+}
+
+// Error calls the default loggers Error.
+func Error(v ...interface{}) {
+	defaultLogger.Error(v...)
+}
+
+// Errorln calls the default loggers Errorln.
+func Errorln(v ...interface{}) {
+	defaultLogger.Errorln(v...)
+}
+
+// Errorf calls the default loggers Errorf.
+func Errorf(format string, v ...interface{}) {
+	defaultLogger.Errorf(format, v...)
+}
+
+// Fatal calls the default loggers Fatal.
+func Fatal(v ...interface{}) {
+	defaultLogger.Fatal(v...)
+}
+
+// Fatalln calls the default loggers Fatalln.
+func Fatalln(v ...interface{}) {
+	defaultLogger.Fatalln(v...)
+}
+
+// Fatalf calls the default loggers Fatalln.
+func Fatalf(format string, v ...interface{}) {
+	defaultLogger.Fatalf(format, v...)
 }
