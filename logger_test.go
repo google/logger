@@ -9,6 +9,45 @@ import (
 	"testing"
 )
 
+func TestLoggingBeforeInit(t *testing.T) {
+	old := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	os.Stderr = w
+	// Reset
+	initialize()
+	initialized = false
+
+	info := "info log"
+	errL := "error log"
+	fatal := "fatal log"
+
+	Info(info)
+	Error(errL)
+	// We don't want os.Exit in a test
+	defaultLogger.output(sFatal, fatal)
+
+	w.Close()
+	os.Stderr = old
+
+	var b bytes.Buffer
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		b.Write(scanner.Bytes())
+	}
+
+	out := b.String()
+
+	for _, txt := range []string{info, errL, fatal} {
+		if !strings.Contains(out, txt) {
+			t.Errorf("log output %q does not contain expected text: %q", out, txt)
+		}
+	}
+}
+
 func TestInit(t *testing.T) {
 	var buf1 bytes.Buffer
 	l1 := Init("test1", false, false, &buf1)
@@ -40,44 +79,6 @@ func TestInit(t *testing.T) {
 		got := len(strings.Split(strings.TrimSpace(tt.out), "\n"))
 		if got != tt.want {
 			t.Errorf("logger %d wrong number of lines, want %d, got %d", i+1, tt.want, got)
-		}
-	}
-}
-
-func TestLoggingBeforeInit(t *testing.T) {
-	// Reset
-	defaultLogger = &logger{}
-	initialized = false
-
-	old := os.Stderr
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	info := "info log"
-	errL := "error log"
-	fatal := "fatal log"
-
-	os.Stderr = w
-	Info(info)
-	Error(errL)
-	defaultLogger.output(sFatal, fatal)
-
-	w.Close()
-	os.Stderr = old
-
-	var b bytes.Buffer
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		b.Write(scanner.Bytes())
-	}
-
-	out := b.String()
-
-	for _, txt := range []string{info, errL, fatal} {
-		if !strings.Contains(out, txt) {
-			t.Errorf("log output %q does not contain expected text: %q", out, txt)
 		}
 	}
 }

@@ -27,14 +27,28 @@ import (
 var (
 	defaultLogger *logger
 	initialized   bool
+	logLock       sync.Mutex
 )
 
+const (
+	flags    = log.Ldate | log.Lmicroseconds | log.Lshortfile
+	initText = "ERROR: Logging before logger.Init.\n"
+)
+
+func initialize() {
+	defaultLogger = &logger{
+		infoLog:  log.New(os.Stderr, initText+"INFO: ", flags),
+		errorLog: log.New(os.Stderr, initText+"ERROR: ", flags),
+		fatalLog: log.New(os.Stderr, initText+"FATAL: ", flags),
+	}
+}
+
 func init() {
-	defaultLogger = &logger{}
+	initialize()
 }
 
 // Init sets up logging and should be called before log functions, usually in
-// the callers main(). Default log functions can be called before Init(), but log
+// the caller's main(). Default log functions can be called before Init(), but log
 // output will only go to stderr (along with a warning).
 // The first call to Init populates the default logger and returns the
 // generated logger, subsequent calls to Init will only return the generated
@@ -61,16 +75,16 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *logger {
 		eLogs = append(eLogs, el)
 	}
 
-	flags := log.Ldate | log.Lmicroseconds | log.Lshortfile
-
 	var l logger
 	l.infoLog = log.New(io.MultiWriter(iLogs...), "INFO: ", flags)
 	l.errorLog = log.New(io.MultiWriter(eLogs...), "ERROR: ", flags)
 	l.fatalLog = log.New(io.MultiWriter(eLogs...), "FATAL: ", flags)
+	l.initialized = true
 
-	if !initialized {
+	logLock.Lock()
+	defer logLock.Unlock()
+	if !defaultLogger.initialized {
 		defaultLogger = &l
-		initialized = true
 	}
 
 	return &l
@@ -85,34 +99,21 @@ const (
 )
 
 type logger struct {
-	infoLog  *log.Logger
-	errorLog *log.Logger
-	fatalLog *log.Logger
-	logLock  sync.Mutex
+	infoLog     *log.Logger
+	errorLog    *log.Logger
+	fatalLog    *log.Logger
+	initialized bool
 }
 
 func (l *logger) output(s severity, txt string) {
-	l.logLock.Lock()
-	defer l.logLock.Unlock()
-	initText := "ERROR: Logging before logger.Init."
+	logLock.Lock()
+	defer logLock.Unlock()
 	switch s {
 	case sInfo:
-		if !initialized {
-			fmt.Fprintf(os.Stderr, "%s\nINFO: %s\n", initText, txt)
-			return
-		}
 		l.infoLog.Output(3, txt)
 	case sError:
-		if !initialized {
-			fmt.Fprintf(os.Stderr, "%s\nERROR: %s\n", initText, txt)
-			return
-		}
 		l.errorLog.Output(3, txt)
 	case sFatal:
-		if !initialized {
-			fmt.Fprintf(os.Stderr, "%s\nFATAL: %s\n", initText, txt)
-			return
-		}
 		l.fatalLog.Output(3, txt)
 	default:
 		panic(fmt.Sprintln("unrecognized severity:", s))
@@ -176,47 +177,47 @@ func (l *logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-// Info calls the default loggers Info.
+// Info calls the default logger's Info.
 func Info(v ...interface{}) {
 	defaultLogger.Info(v...)
 }
 
-// Infoln calls the default loggers Infoln.
+// Infoln calls the default logger's Infoln.
 func Infoln(v ...interface{}) {
 	defaultLogger.Infoln(v...)
 }
 
-// Infof calls the default loggers Infof.
+// Infof calls the default logger's Infof.
 func Infof(format string, v ...interface{}) {
 	defaultLogger.Infof(format, v...)
 }
 
-// Error calls the default loggers Error.
+// Error calls the default logger's Error.
 func Error(v ...interface{}) {
 	defaultLogger.Error(v...)
 }
 
-// Errorln calls the default loggers Errorln.
+// Errorln calls the default logger's Errorln.
 func Errorln(v ...interface{}) {
 	defaultLogger.Errorln(v...)
 }
 
-// Errorf calls the default loggers Errorf.
+// Errorf calls the default logger's Errorf.
 func Errorf(format string, v ...interface{}) {
 	defaultLogger.Errorf(format, v...)
 }
 
-// Fatal calls the default loggers Fatal.
+// Fatal calls the default logger's Fatal.
 func Fatal(v ...interface{}) {
 	defaultLogger.Fatal(v...)
 }
 
-// Fatalln calls the default loggers Fatalln.
+// Fatalln calls the default logger's Fatalln.
 func Fatalln(v ...interface{}) {
 	defaultLogger.Fatalln(v...)
 }
 
-// Fatalf calls the default loggers Fatalln.
+// Fatalf calls the default logger's Fatalln.
 func Fatalf(format string, v ...interface{}) {
 	defaultLogger.Fatalf(format, v...)
 }
