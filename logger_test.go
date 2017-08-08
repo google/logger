@@ -15,6 +15,7 @@ func TestLoggingBeforeInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer w.Close()
 
 	os.Stderr = w
 	// Reset
@@ -30,7 +31,6 @@ func TestLoggingBeforeInit(t *testing.T) {
 	// We don't want os.Exit in a test
 	defaultLogger.output(sFatal, fatal)
 
-	w.Close()
 	os.Stderr = old
 
 	var b bytes.Buffer
