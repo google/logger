@@ -1,77 +1,33 @@
 package logger
 
 import (
-	"bufio"
 	"bytes"
-	"os"
-	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestLoggingBeforeInit(t *testing.T) {
-	old := os.Stderr
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer w.Close()
-
-	os.Stderr = w
-	// Reset
-	initialize()
-	initialized = false
-
-	info := "info log"
-	errL := "error log"
-	fatal := "fatal log"
-
-	Info(info)
-	Error(errL)
-	// We don't want os.Exit in a test
-	defaultLogger.output(sFatal, fatal)
-
-	os.Stderr = old
-
-	var b bytes.Buffer
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		b.Write(scanner.Bytes())
-	}
-
-	out := b.String()
-
-	for _, txt := range []string{info, errL, fatal} {
-		if !strings.Contains(out, txt) {
-			t.Errorf("log output %q does not contain expected text: %q", out, txt)
-		}
-	}
-}
-
-func TestInit(t *testing.T) {
+func TestNewLogger(t *testing.T) {
 	var buf1 bytes.Buffer
-	l1 := Init("test1", false, false, &buf1)
-	if !reflect.DeepEqual(l1, defaultLogger) {
-		t.Fatal("defaultLogger does not match logger returned by Init")
+	l1, err := NewLogger("test1", &buf1)
+	if err != nil {
+		t.Fatal("Could not create logger")
 	}
-
 	// Subsequent runs of Init shouldn't change defaultLogger.
 	var buf2 bytes.Buffer
-	l2 := Init("test2", false, false, &buf2)
-	if !reflect.DeepEqual(l1, defaultLogger) {
-		t.Error("defaultLogger should not have changed")
+	l2, err := NewLogger("test2", &buf2)
+	if err != nil {
+		t.Fatal("Could not create logger")
 	}
 
 	// Check log output.
 	l1.Info("logger #1")
 	l2.Info("logger #2")
-	defaultLogger.Info("default logger")
 
 	tests := []struct {
 		out  string
 		want int
 	}{
-		{buf1.String(), 2},
+		{buf1.String(), 1},
 		{buf2.String(), 1},
 	}
 
