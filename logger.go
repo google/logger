@@ -97,7 +97,7 @@ const (
 	sFatal
 )
 
-// A Logger represents an active logging object, multiple loggers can be used
+// A Logger represents an active logging object. Multiple loggers can be used
 // simultaneously even if they are using the same same writers.
 type Logger struct {
 	infoLog     *log.Logger
