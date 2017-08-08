@@ -17,140 +17,105 @@ limitations under the License.
 package logger
 
 import (
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"sync"
 )
 
-var (
-	logLock       sync.Mutex
-)
+type severityType string
 
 const (
-	flags    = log.Ldate | log.Lmicroseconds | log.Lshortfile
-	initText = "ERROR: Logging before logger.Init.\n"
+	sInfo  = severityType("Info")
+	sError = severityType("Error")
+	sFatal = severityType("Fatal")
 )
 
-// Init sets up logging and should be called before log functions, usually in
-// the caller's main(). Default log functions can be called before Init(), but log
-// output will only go to stderr (along with a warning).
-// The first call to Init populates the default logger and returns the
-// generated logger, subsequent calls to Init will only return the generated
-// logger.
-func Init(name string, verbose, systemLog bool, logFile io.Writer) *logger {
-	var il, el io.Writer
-	if systemLog {
-		var err error
-		il, el, err = setup(name)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	iLogs := []io.Writer{logFile}
-	eLogs := []io.Writer{logFile, os.Stderr}
-	if verbose {
-		iLogs = append(iLogs, os.Stdout)
-	}
-	if il != nil {
-		iLogs = append(iLogs, il)
-	}
-	if el != nil {
-		eLogs = append(eLogs, el)
-	}
-
-	var l logger
-	l.infoLog = log.New(io.MultiWriter(iLogs...), "INFO: ", flags)
-	l.errorLog = log.New(io.MultiWriter(eLogs...), "ERROR: ", flags)
-	l.fatalLog = log.New(io.MultiWriter(eLogs...), "FATAL: ", flags)
-
-	return &l
+type message struct {
+	sev severityType
+	msg string
 }
 
-type severity int
-
-const (
-	sInfo = iota
-	sError
-	sFatal
-)
+func (m message) String() string {
+	return fmt.Sprintf("[%v]: %v", m.sev, m.msg)
+}
 
 type logger struct {
-	infoLog     *log.Logger
-	errorLog    *log.Logger
-	fatalLog    *log.Logger
+	msg chan message
 }
 
-func (l *logger) output(s severity, txt string) {
-	logLock.Lock()
-	defer logLock.Unlock()
-	switch s {
-	case sInfo:
-		l.infoLog.Output(3, txt)
-	case sError:
-		l.errorLog.Output(3, txt)
-	case sFatal:
-		l.fatalLog.Output(3, txt)
-	default:
-		panic(fmt.Sprintln("unrecognized severity:", s))
+// NewLogger sets up logging - should be called before log receiver methods.
+func NewLogger(name string, w io.Writer) (*logger, error) {
+	if len(name) == 0 {
+		return nil, errors.New("null logger name")
+	}
+	l := &logger{
+		msg: make(chan message),
+	}
+	go l.run(w)
+	return l, nil
+}
+
+func (l *logger) run(w io.Writer) {
+	for {
+		m := <-l.msg
+		fmt.Fprintln(w, m.String())
 	}
 }
 
 // Info logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Print.
 func (l *logger) Info(v ...interface{}) {
-	l.output(sInfo, fmt.Sprint(v...))
+	l.msg <- message{sInfo, fmt.Sprint(v...)}
 }
 
 // Infoln logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Println.
 func (l *logger) Infoln(v ...interface{}) {
-	l.output(sInfo, fmt.Sprintln(v...))
+	l.msg <- message{sInfo, fmt.Sprintln(v...)}
 }
 
 // Infof logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *logger) Infof(format string, v ...interface{}) {
-	l.output(sInfo, fmt.Sprintf(format, v...))
+	l.msg <- message{sInfo, fmt.Sprintf(format, v...)}
 }
 
 // Error logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Print.
 func (l *logger) Error(v ...interface{}) {
-	l.output(sError, fmt.Sprint(v...))
+	l.msg <- message{sError, fmt.Sprint(v...)}
 }
 
 // Errorln logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Println.
 func (l *logger) Errorln(v ...interface{}) {
-	l.output(sError, fmt.Sprintln(v...))
+	l.msg <- message{sError, fmt.Sprintln(v...)}
 }
 
 // Errorf logs with the Error severity.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *logger) Errorf(format string, v ...interface{}) {
-	l.output(sError, fmt.Sprintf(format, v...))
+	l.msg <- message{sError, fmt.Sprintf(format, v...)}
 }
 
 // Fatal logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Print.
 func (l *logger) Fatal(v ...interface{}) {
-	l.output(sFatal, fmt.Sprint(v...))
+	l.msg <- message{sFatal, fmt.Sprint(v...)}
 	os.Exit(1)
 }
 
 // Fatalln logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Println.
 func (l *logger) Fatalln(v ...interface{}) {
-	l.output(sFatal, fmt.Sprintln(v...))
+	l.msg <- message{sFatal, fmt.Sprintln(v...)}
 	os.Exit(1)
 }
 
 // Fatalf logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Printf.
 func (l *logger) Fatalf(format string, v ...interface{}) {
-	l.output(sFatal, fmt.Sprintf(format, v...))
+	l.msg <- message{sFatal, fmt.Sprintf(format, v...)}
 	os.Exit(1)
 }
