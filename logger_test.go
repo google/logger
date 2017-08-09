@@ -19,6 +19,7 @@ func TestLoggingBeforeInit(t *testing.T) {
 	os.Stderr = w
 	// Reset
 	initialize()
+	initialized = false
 
 	info := "info log"
 	errL := "error log"

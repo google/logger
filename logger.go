@@ -25,7 +25,8 @@ import (
 )
 
 var (
-	defaultLogger *Logger
+	defaultLogger *logger
+	initialized   bool
 	logLock       sync.Mutex
 )
 
@@ -35,7 +36,7 @@ const (
 )
 
 func initialize() {
-	defaultLogger = &Logger{
+	defaultLogger = &logger{
 		infoLog:  log.New(os.Stderr, initText+"INFO: ", flags),
 		errorLog: log.New(os.Stderr, initText+"ERROR: ", flags),
 		fatalLog: log.New(os.Stderr, initText+"FATAL: ", flags),
@@ -52,7 +53,7 @@ func init() {
 // The first call to Init populates the default logger and returns the
 // generated logger, subsequent calls to Init will only return the generated
 // logger.
-func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
+func Init(name string, verbose, systemLog bool, logFile io.Writer) *logger {
 	var il, el io.Writer
 	if systemLog {
 		var err error
@@ -74,7 +75,7 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 		eLogs = append(eLogs, el)
 	}
 
-	var l Logger
+	var l logger
 	l.infoLog = log.New(io.MultiWriter(iLogs...), "INFO: ", flags)
 	l.errorLog = log.New(io.MultiWriter(eLogs...), "ERROR: ", flags)
 	l.fatalLog = log.New(io.MultiWriter(eLogs...), "FATAL: ", flags)
@@ -97,16 +98,14 @@ const (
 	sFatal
 )
 
-// A Logger represents an active logging object. Multiple loggers can be used
-// simultaneously even if they are using the same same writers.
-type Logger struct {
+type logger struct {
 	infoLog     *log.Logger
 	errorLog    *log.Logger
 	fatalLog    *log.Logger
 	initialized bool
 }
 
-func (l *Logger) output(s severity, txt string) {
+func (l *logger) output(s severity, txt string) {
 	logLock.Lock()
 	defer logLock.Unlock()
 	switch s {
@@ -123,57 +122,57 @@ func (l *Logger) output(s severity, txt string) {
 
 // Info logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Print.
-func (l *Logger) Info(v ...interface{}) {
+func (l *logger) Info(v ...interface{}) {
 	l.output(sInfo, fmt.Sprint(v...))
 }
 
 // Infoln logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Println.
-func (l *Logger) Infoln(v ...interface{}) {
+func (l *logger) Infoln(v ...interface{}) {
 	l.output(sInfo, fmt.Sprintln(v...))
 }
 
 // Infof logs with the INFO severity.
 // Arguments are handled in the manner of fmt.Printf.
-func (l *Logger) Infof(format string, v ...interface{}) {
+func (l *logger) Infof(format string, v ...interface{}) {
 	l.output(sInfo, fmt.Sprintf(format, v...))
 }
 
 // Error logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Print.
-func (l *Logger) Error(v ...interface{}) {
+func (l *logger) Error(v ...interface{}) {
 	l.output(sError, fmt.Sprint(v...))
 }
 
 // Errorln logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Println.
-func (l *Logger) Errorln(v ...interface{}) {
+func (l *logger) Errorln(v ...interface{}) {
 	l.output(sError, fmt.Sprintln(v...))
 }
 
 // Errorf logs with the Error severity.
 // Arguments are handled in the manner of fmt.Printf.
-func (l *Logger) Errorf(format string, v ...interface{}) {
+func (l *logger) Errorf(format string, v ...interface{}) {
 	l.output(sError, fmt.Sprintf(format, v...))
 }
 
 // Fatal logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Print.
-func (l *Logger) Fatal(v ...interface{}) {
+func (l *logger) Fatal(v ...interface{}) {
 	l.output(sFatal, fmt.Sprint(v...))
 	os.Exit(1)
 }
 
 // Fatalln logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Println.
-func (l *Logger) Fatalln(v ...interface{}) {
+func (l *logger) Fatalln(v ...interface{}) {
 	l.output(sFatal, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
 // Fatalf logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Printf.
-func (l *Logger) Fatalf(format string, v ...interface{}) {
+func (l *logger) Fatalf(format string, v ...interface{}) {
 	l.output(sFatal, fmt.Sprintf(format, v...))
 	os.Exit(1)
 }
