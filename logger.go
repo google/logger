@@ -52,7 +52,11 @@ func NewLogger(name string, w io.Writer) (*logger, error) {
 	l := &logger{
 		msg: make(chan message),
 	}
-	go l.run(w)
+	if w == nil {
+		go l.run(os.Stderr)
+	} else {
+		go l.run(w)
+	}
 	return l, nil
 }
 
