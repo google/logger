@@ -1,19 +1,19 @@
 # logger #
-Logger is a simple cross platform Go logging library for Windows, Linux, and 
-macOS, it can log to the Windows event log, Linux/macOS syslog, and an io.Writer. 
+Logger is a simple cross platform Go logging library for Windows, Linux, and
+macOS, it can log to the Windows event log, Linux/macOS syslog, and an io.Writer.
 
 This is not an official Google product.
 
 ## Usage ##
 
-Set up the default logger to log the system log (event log or syslog) and a 
+Set up the default logger to log the system log (event log or syslog) and a
 file, include a flag to turn up verbosity:
 
 ```go
 import (
   "flag"
   "os"
-  
+
   "github.com/google/logger"
 )
 
@@ -59,5 +59,3 @@ loggerTwo.Info("This will only log to stdout")
 logger.Info("This is the same as using loggerOne")
 
 ```
-
-
