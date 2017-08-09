@@ -19,43 +19,39 @@ import (
 
 const logPath = "/some/location/example.log"
 
-var verbose = flag.Bool("verbose", false, "print info level logs to stdout")
-
 func main() {
-  flag.Parse()
-
   lf, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
   if err != nil {
-    logger.Fatalf("Failed to open log file: %v", err)
+    panic("Failed to open log file: %v", err)
   }
   defer lf.Close()
 
-  logger.Init("LoggerExample", *verbose, true, lf)
+  l := logger.NewLogger("LoggerExample", lf)
 
-  logger.Info("I'm about to do something!")
+  l.Info("I'm about to do something!")
   if err := doSomething(); err != nil {
-    logger.Errorf("Error running doSomething: %v", err)
+    l.Errorf("Error running doSomething: %v", err)
   }
 }
 ```
 
-The Init function returns a logger so you can setup multiple instances if you
-wish, only the first call to Init will set the default logger:
+The `NewLogger()` function returns a logger object, you may substantiate
+multiple instances if you require multiple logging backends.
 
 ```go
 lf, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
 if err != nil {
-  logger.Fatalf("Failed to open log file: %v", err)
+  panic("Failed to open log file: %v", err)
 }
 defer lf.Close()
 
 // Log to system log and a log file, Info logs don't write to stdout.
-loggerOne := logger.Init("LoggerExample", false, true, lf)
-// Don't to system log or a log file, Info logs write to stdout..
-loggerTwo := logger.Init("LoggerExample", true, false, ioutil.Discard)
+lZero := logger.NewLogger("LoggerExample0", lf)
+// Don't send to system log or a log file, Info logs writes to stdout..
+lOne := logger.NewLogger("LoggerExample1", ioutil.Discard)
 
-loggerOne.Info("This will log to the log file and the system log")
-loggerTwo.Info("This will only log to stdout")
-logger.Info("This is the same as using loggerOne")
+lZero.Info("This will log to the log file and the system log")
+lOne.Info("This will only log to stdout")
+l.Info("This is the same as using loggerOne")
 
 ```
