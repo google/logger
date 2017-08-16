@@ -178,47 +178,62 @@ func (l *Logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-// Info calls the default logger's Info.
+// Info uses the default logger and logs with the Info severity.
+// Arguments are handled in the manner of fmt.Print.
 func Info(v ...interface{}) {
-	defaultLogger.Info(v...)
+	defaultLogger.output(sInfo, fmt.Sprint(v...))
 }
 
-// Infoln calls the default logger's Infoln.
+// Infoln uses the default logger and logs with the Info severity.
+// Arguments are handled in the manner of fmt.Println.
 func Infoln(v ...interface{}) {
-	defaultLogger.Infoln(v...)
+	defaultLogger.output(sInfo, fmt.Sprintln(v...))
 }
 
-// Infof calls the default logger's Infof.
+// Infof uses the default logger and logs with the Info severity.
+// Arguments are handled in the manner of fmt.Printf.
 func Infof(format string, v ...interface{}) {
-	defaultLogger.Infof(format, v...)
+	defaultLogger.output(sInfo, fmt.Sprintf(format, v...))
 }
 
-// Error calls the default logger's Error.
+// Error uses the default logger and logs with the Error severity.
+// Arguments are handled in the manner of fmt.Print.
 func Error(v ...interface{}) {
-	defaultLogger.Error(v...)
+	defaultLogger.output(sError, fmt.Sprint(v...))
 }
 
-// Errorln calls the default logger's Errorln.
+// Errorln uses the default logger and logs with the Error severity.
+// Arguments are handled in the manner of fmt.Println.
 func Errorln(v ...interface{}) {
-	defaultLogger.Errorln(v...)
+	defaultLogger.output(sError, fmt.Sprintln(v...))
 }
 
-// Errorf calls the default logger's Errorf.
+// Errorf uses the default logger and logs with the Error severity.
+// Arguments are handled in the manner of fmt.Printf.
 func Errorf(format string, v ...interface{}) {
-	defaultLogger.Errorf(format, v...)
+	defaultLogger.output(sError, fmt.Sprintf(format, v...))
 }
 
-// Fatal calls the default logger's Fatal.
+// Fatalln uses the default logger, logs with the Fatal severity,
+// and ends with os.Exit(1).
+// Arguments are handled in the manner of fmt.Print.
 func Fatal(v ...interface{}) {
-	defaultLogger.Fatal(v...)
+	defaultLogger.output(sFatal, fmt.Sprint(v...))
+	os.Exit(1)
 }
 
-// Fatalln calls the default logger's Fatalln.
+// Fatalln uses the default logger, logs with the Fatal severity,
+// and ends with os.Exit(1).
+// Arguments are handled in the manner of fmt.Println.
 func Fatalln(v ...interface{}) {
-	defaultLogger.Fatalln(v...)
+	defaultLogger.output(sFatal, fmt.Sprintln(v...))
+	os.Exit(1)
 }
 
-// Fatalf calls the default logger's Fatalln.
+// Fatalf uses the default logger, logs with the Fatal severity,
+// and ends with os.Exit(1).
+// Arguments are handled in the manner of fmt.Printf.
 func Fatalf(format string, v ...interface{}) {
-	defaultLogger.Fatalf(format, v...)
+	defaultLogger.output(sFatal, fmt.Sprintf(format, v...))
+	os.Exit(1)
 }
