@@ -1,5 +1,12 @@
-dist: trusty
-sudo: false
 language: go
 go: 1.x
-
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: false
+    - os: linux
+      dist: trusty
+      sudo: false
+      env: GOOS=windows
+    - os: osx
