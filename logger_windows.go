@@ -1,3 +1,5 @@
+// +build windows
+
 /*
 Copyright 2016 Google Inc. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +38,10 @@ func (w *writer) Write(b []byte) (int, error) {
 		return len(b), w.el.Error(2, string(b))
 	}
 	return 0, fmt.Errorf("unrecognized severity: %v", w.pri)
+}
+
+func (w *writer) Close() error {
+	return w.el.Close()
 }
 
 func newW(pri severity, src string) (*writer, error) {
