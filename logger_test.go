@@ -29,7 +29,7 @@ func TestLoggingBeforeInit(t *testing.T) {
 	Warning(warning)
 	Error(errL)
 	// We don't want os.Exit in a test
-	defaultLogger.output(sFatal, fatal)
+	defaultLogger.output(sFatal, 0, fatal)
 
 	w.Close()
 	os.Stderr = old
