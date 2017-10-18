@@ -24,9 +24,22 @@ import (
 	"sync"
 )
 
-var (
-	defaultLogger *Logger
-	logLock       sync.Mutex
+type severity int
+
+// Severity levels.
+const (
+	sInfo severity = iota
+	sWarning
+	sError
+	sFatal
+)
+
+// Severity tags.
+const (
+	tagInfo    = "INFO : "
+	tagWarning = "WARN : "
+	tagError   = "ERROR: "
+	tagFatal   = "FATAL: "
 )
 
 const (
@@ -34,6 +47,12 @@ const (
 	initText = "ERROR: Logging before logger.Init.\n"
 )
 
+var (
+	logLock       sync.Mutex
+	defaultLogger *Logger
+)
+
+// initialize resets defaultLogger.  Which allows tests to reset environment.
 func initialize() {
 	defaultLogger = &Logger{
 		infoLog:    log.New(os.Stderr, initText+tagInfo, flags),
@@ -77,11 +96,12 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 		eLogs = append(eLogs, el)
 	}
 
-	var l Logger
-	l.infoLog = log.New(io.MultiWriter(iLogs...), tagInfo, flags)
-	l.infoLog = log.New(io.MultiWriter(iLogs...), tagWarning, flags)
-	l.errorLog = log.New(io.MultiWriter(eLogs...), tagError, flags)
-	l.fatalLog = log.New(io.MultiWriter(eLogs...), tagFatal, flags)
+	l := Logger{
+		infoLog:    log.New(io.MultiWriter(iLogs...), tagInfo, flags),
+		warningLog: log.New(io.MultiWriter(iLogs...), tagWarning, flags),
+		errorLog:   log.New(io.MultiWriter(eLogs...), tagError, flags),
+		fatalLog:   log.New(io.MultiWriter(eLogs...), tagFatal, flags),
+	}
 	for _, w := range []io.Writer{logFile, il, el} {
 		if c, ok := w.(io.Closer); ok && c != nil {
 			l.closers = append(l.closers, c)
@@ -97,22 +117,6 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 
 	return &l
 }
-
-type severity int
-
-const (
-	sInfo = iota
-	sWarning
-	sError
-	sFatal
-)
-
-const (
-	tagInfo    = "INFO : "
-	tagWarning = "WARN : "
-	tagError   = "ERROR: "
-	tagFatal   = "FATAL: "
-)
 
 // A Logger represents an active logging object. Multiple loggers can be used
 // simultaneously even if they are using the same same writers.
