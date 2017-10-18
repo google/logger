@@ -38,6 +38,10 @@ func (w *writer) Write(b []byte) (int, error) {
 	return 0, fmt.Errorf("unrecognized severity: %v", w.pri)
 }
 
+func (w *writer) Close() error {
+	return w.el.Close()
+}
+
 func newW(pri severity, src string) (*writer, error) {
 	// Continue if we receive "registry key already exists" or if we get
 	// ERROR_ACCESS_DENIED so that we can log without administrative permissions

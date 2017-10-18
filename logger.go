@@ -52,6 +52,8 @@ func init() {
 // The first call to Init populates the default logger and returns the
 // generated logger, subsequent calls to Init will only return the generated
 // logger.
+// If the logFile passed in also satisfies io.Closer, logFile.Close will be called
+// when closing the logger.
 func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	var il, el io.Writer
 	if systemLog {
@@ -78,6 +80,11 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	l.infoLog = log.New(io.MultiWriter(iLogs...), "INFO: ", flags)
 	l.errorLog = log.New(io.MultiWriter(eLogs...), "ERROR: ", flags)
 	l.fatalLog = log.New(io.MultiWriter(eLogs...), "FATAL: ", flags)
+	for _, w := range []io.Writer{logFile, il, el} {
+		if c, ok := w.(io.Closer); ok && c != nil {
+			l.closers = append(l.closers, c)
+		}
+	}
 	l.initialized = true
 
 	logLock.Lock()
@@ -103,6 +110,7 @@ type Logger struct {
 	infoLog     *log.Logger
 	errorLog    *log.Logger
 	fatalLog    *log.Logger
+	closers     []io.Closer
 	initialized bool
 }
 
@@ -118,6 +126,19 @@ func (l *Logger) output(s severity, txt string) {
 		l.fatalLog.Output(3, txt)
 	default:
 		panic(fmt.Sprintln("unrecognized severity:", s))
+	}
+}
+
+// Close closes all the underlying log writers, which will flush any cached logs.
+// Any errors from closing the underlying log writers will be printed to stderr.
+// Once Close is called, all future calls to the logger will panic.
+func (l *Logger) Close() {
+	logLock.Lock()
+	defer logLock.Unlock()
+	for _, c := range l.closers {
+		if err := c.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to close log %v: %v\n", c, err)
+		}
 	}
 }
 
@@ -161,6 +182,7 @@ func (l *Logger) Errorf(format string, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Fatal(v ...interface{}) {
 	l.output(sFatal, fmt.Sprint(v...))
+	l.Close()
 	os.Exit(1)
 }
 
@@ -168,6 +190,7 @@ func (l *Logger) Fatal(v ...interface{}) {
 // Arguments are handled in the manner of fmt.Println.
 func (l *Logger) Fatalln(v ...interface{}) {
 	l.output(sFatal, fmt.Sprintln(v...))
+	l.Close()
 	os.Exit(1)
 }
 
@@ -175,6 +198,7 @@ func (l *Logger) Fatalln(v ...interface{}) {
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.output(sFatal, fmt.Sprintf(format, v...))
+	l.Close()
 	os.Exit(1)
 }
 
@@ -219,6 +243,7 @@ func Errorf(format string, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Print.
 func Fatal(v ...interface{}) {
 	defaultLogger.output(sFatal, fmt.Sprint(v...))
+	defaultLogger.Close()
 	os.Exit(1)
 }
 
@@ -227,6 +252,7 @@ func Fatal(v ...interface{}) {
 // Arguments are handled in the manner of fmt.Println.
 func Fatalln(v ...interface{}) {
 	defaultLogger.output(sFatal, fmt.Sprintln(v...))
+	defaultLogger.Close()
 	os.Exit(1)
 }
 
@@ -235,5 +261,6 @@ func Fatalln(v ...interface{}) {
 // Arguments are handled in the manner of fmt.Printf.
 func Fatalf(format string, v ...interface{}) {
 	defaultLogger.output(sFatal, fmt.Sprintf(format, v...))
+	defaultLogger.Close()
 	os.Exit(1)
 }
