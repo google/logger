@@ -21,10 +21,12 @@ func TestLoggingBeforeInit(t *testing.T) {
 	initialize()
 
 	info := "info log"
+	warning := "warning log"
 	errL := "error log"
 	fatal := "fatal log"
 
 	Info(info)
+	Warning(warning)
 	Error(errL)
 	// We don't want os.Exit in a test
 	defaultLogger.output(sFatal, fatal)
@@ -40,7 +42,7 @@ func TestLoggingBeforeInit(t *testing.T) {
 
 	out := b.String()
 
-	for _, txt := range []string{info, errL, fatal} {
+	for _, txt := range []string{info, warning, errL, fatal} {
 		if !strings.Contains(out, txt) {
 			t.Errorf("log output %q does not contain expected text: %q", out, txt)
 		}
