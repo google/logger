@@ -95,7 +95,7 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 		iLogs = append(iLogs, il)
 	}
 	if wl != nil {
-		wLogs = append(iLogs, wl)
+		wLogs = append(wLogs, wl)
 	}
 	if el != nil {
 		eLogs = append(eLogs, el)
