@@ -19,14 +19,18 @@ import (
 	"log/syslog"
 )
 
-func setup(src string) (*syslog.Writer, *syslog.Writer, error) {
+func setup(src string) (*syslog.Writer, *syslog.Writer, *syslog.Writer, error) {
 	il, err := syslog.New(syslog.LOG_NOTICE, src)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	wl, err := syslog.New(syslog.LOG_WARNING, src)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	el, err := syslog.New(syslog.LOG_ERR, src)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return il, el, nil
+	return il, wl, el, nil
 }
