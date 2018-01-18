@@ -75,22 +75,27 @@ func init() {
 // If the logFile passed in also satisfies io.Closer, logFile.Close will be called
 // when closing the logger.
 func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
-	var il, el io.Writer
+	var il, wl, el io.Writer
 	if systemLog {
 		var err error
-		il, el, err = setup(name)
+		il, wl, el, err = setup(name)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	iLogs := []io.Writer{logFile}
+	wLogs := []io.Writer{logFile}
 	eLogs := []io.Writer{logFile, os.Stderr}
 	if verbose {
 		iLogs = append(iLogs, os.Stdout)
+		wLogs = append(wLogs, os.Stdout)
 	}
 	if il != nil {
 		iLogs = append(iLogs, il)
+	}
+	if wl != nil {
+		wLogs = append(wLogs, wl)
 	}
 	if el != nil {
 		eLogs = append(eLogs, el)
@@ -98,11 +103,11 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 
 	l := Logger{
 		infoLog:    log.New(io.MultiWriter(iLogs...), tagInfo, flags),
-		warningLog: log.New(io.MultiWriter(iLogs...), tagWarning, flags),
+		warningLog: log.New(io.MultiWriter(wLogs...), tagWarning, flags),
 		errorLog:   log.New(io.MultiWriter(eLogs...), tagError, flags),
 		fatalLog:   log.New(io.MultiWriter(eLogs...), tagFatal, flags),
 	}
-	for _, w := range []io.Writer{logFile, il, el} {
+	for _, w := range []io.Writer{logFile, il, wl, el} {
 		if c, ok := w.(io.Closer); ok && c != nil {
 			l.closers = append(l.closers, c)
 		}
