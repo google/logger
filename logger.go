@@ -86,11 +86,7 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 
 	iLogs := []io.Writer{logFile}
 	wLogs := []io.Writer{logFile}
-	eLogs := []io.Writer{logFile, os.Stderr}
-	if verbose {
-		iLogs = append(iLogs, os.Stdout)
-		wLogs = append(wLogs, os.Stdout)
-	}
+	eLogs := []io.Writer{logFile}
 	if il != nil {
 		iLogs = append(iLogs, il)
 	}
@@ -99,6 +95,12 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	}
 	if el != nil {
 		eLogs = append(eLogs, el)
+	}
+	// Windows services don't have stdout/stderr. Writes will fail, so try them last.
+	eLogs = append(eLogs, os.Stderr)
+	if verbose {
+		iLogs = append(iLogs, os.Stdout)
+		wLogs = append(wLogs, os.Stdout)
 	}
 
 	l := Logger{
