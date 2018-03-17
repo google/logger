@@ -43,22 +43,23 @@ const (
 )
 
 const (
-	flags    = log.Ldate | log.Lmicroseconds | log.Lshortfile
 	initText = "ERROR: Logging before logger.Init.\n"
 )
 
 var (
 	logLock       sync.Mutex
 	defaultLogger *Logger
+	// Flags defines the Flags that are passed to the log function
+	Flags = log.Ldate | log.Lmicroseconds | log.Lshortfile
 )
 
 // initialize resets defaultLogger.  Which allows tests to reset environment.
 func initialize() {
 	defaultLogger = &Logger{
-		infoLog:    log.New(os.Stderr, initText+tagInfo, flags),
-		warningLog: log.New(os.Stderr, initText+tagWarning, flags),
-		errorLog:   log.New(os.Stderr, initText+tagError, flags),
-		fatalLog:   log.New(os.Stderr, initText+tagFatal, flags),
+		infoLog:    log.New(os.Stderr, initText+tagInfo, Flags),
+		warningLog: log.New(os.Stderr, initText+tagWarning, Flags),
+		errorLog:   log.New(os.Stderr, initText+tagError, Flags),
+		fatalLog:   log.New(os.Stderr, initText+tagFatal, Flags),
 	}
 }
 
@@ -104,10 +105,10 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	}
 
 	l := Logger{
-		infoLog:    log.New(io.MultiWriter(iLogs...), tagInfo, flags),
-		warningLog: log.New(io.MultiWriter(wLogs...), tagWarning, flags),
-		errorLog:   log.New(io.MultiWriter(eLogs...), tagError, flags),
-		fatalLog:   log.New(io.MultiWriter(eLogs...), tagFatal, flags),
+		infoLog:    log.New(io.MultiWriter(iLogs...), tagInfo, Flags),
+		warningLog: log.New(io.MultiWriter(wLogs...), tagWarning, Flags),
+		errorLog:   log.New(io.MultiWriter(eLogs...), tagError, Flags),
+		fatalLog:   log.New(io.MultiWriter(eLogs...), tagFatal, Flags),
 	}
 	for _, w := range []io.Writer{logFile, il, wl, el} {
 		if c, ok := w.(io.Closer); ok && c != nil {
