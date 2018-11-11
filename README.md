@@ -62,4 +62,24 @@ logger.Info("This is the same as using loggerOne")
 
 ```
 
+## Custom Format ##
 
+| Code                                 | Example                                                  |
+|--------------------------------------|----------------------------------------------------------|
+| `logger.SetFlags(log.Ldate)`         | ERROR: 2018/11/11 Error running Foobar: message          |
+| `logger.SetFlags(log.Ltime)`         | ERROR: 09:42:45 Error running Foobar: message            |
+| `logger.SetFlags(log.Lmicroseconds)` | ERROR: 09:42:50.776015 Error running Foobar: message     |
+| `logger.SetFlags(log.Llongfile)`     | ERROR: /src/main.go:31: Error running Foobar: message    |
+| `logger.SetFlags(log.Lshortfile)`    | ERROR: main.go:31: Error running Foobar: message         |
+| `logger.SetFlags(log.LUTC)`          | ERROR: Error running Foobar: message                     |
+| `logger.SetFlags(log.LstdFlags)`     | ERROR: 2018/11/11 09:43:12 Error running Foobar: message |
+
+```go
+func main() {
+    lf, err := os.OpenFile(logPath, …, 0660)
+    defer logger.Init("foo", *verbose, true, lf).Close()
+    logger.SetFlags(log.LstdFlags)
+}
+```
+
+More info: https://golang.org/pkg/log/#pkg-constants
