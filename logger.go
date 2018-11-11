@@ -270,6 +270,14 @@ func (l *Logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
+// SetFlags sets the output flags for the logger.
+func SetFlags(flag int) {
+	defaultLogger.infoLog.SetFlags(flag)
+	defaultLogger.warningLog.SetFlags(flag)
+	defaultLogger.errorLog.SetFlags(flag)
+	defaultLogger.fatalLog.SetFlags(flag)
+}
+
 // Info uses the default logger and logs with the Info severity.
 // Arguments are handled in the manner of fmt.Print.
 func Info(v ...interface{}) {
