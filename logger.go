@@ -134,6 +134,9 @@ type Logger struct {
 	fatalLog    *log.Logger
 	closers     []io.Closer
 	initialized bool
+
+	slackWeebHook string
+	errorsToSlack bool
 }
 
 func (l *Logger) output(s severity, depth int, txt string) {
@@ -194,18 +197,33 @@ func (l *Logger) Infof(format string, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Warning(v ...interface{}) {
 	l.output(sWarning, 0, fmt.Sprint(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // WarningDepth acts as Warning but uses depth to determine which call frame to log.
 // WarningDepth(0, "msg") is the same as Warning("msg").
 func (l *Logger) WarningDepth(depth int, v ...interface{}) {
 	l.output(sWarning, depth, fmt.Sprint(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Warningln logs with the Warning severity.
 // Arguments are handled in the manner of fmt.Println.
 func (l *Logger) Warningln(v ...interface{}) {
 	l.output(sWarning, 0, fmt.Sprintln(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Warningf logs with the Warning severity.
@@ -218,30 +236,56 @@ func (l *Logger) Warningf(format string, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Error(v ...interface{}) {
 	l.output(sError, 0, fmt.Sprint(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // ErrorDepth acts as Error but uses depth to determine which call frame to log.
 // ErrorDepth(0, "msg") is the same as Error("msg").
 func (l *Logger) ErrorDepth(depth int, v ...interface{}) {
 	l.output(sError, depth, fmt.Sprint(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Errorln logs with the ERROR severity.
 // Arguments are handled in the manner of fmt.Println.
 func (l *Logger) Errorln(v ...interface{}) {
 	l.output(sError, 0, fmt.Sprintln(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Errorf logs with the Error severity.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Errorf(format string, v ...interface{}) {
 	l.output(sError, 0, fmt.Sprintf(format, v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprintf(format, v...)
+		go SendAlert(l.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Fatal logs with the Fatal severity, and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Fatal(v ...interface{}) {
 	l.output(sFatal, 0, fmt.Sprint(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	l.Close()
 	os.Exit(1)
 }
@@ -250,6 +294,12 @@ func (l *Logger) Fatal(v ...interface{}) {
 // FatalDepth(0, "msg") is the same as Fatal("msg").
 func (l *Logger) FatalDepth(depth int, v ...interface{}) {
 	l.output(sFatal, depth, fmt.Sprint(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	l.Close()
 	os.Exit(1)
 }
@@ -258,6 +308,12 @@ func (l *Logger) FatalDepth(depth int, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Println.
 func (l *Logger) Fatalln(v ...interface{}) {
 	l.output(sFatal, 0, fmt.Sprintln(v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(l.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	l.Close()
 	os.Exit(1)
 }
@@ -266,8 +322,34 @@ func (l *Logger) Fatalln(v ...interface{}) {
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.output(sFatal, 0, fmt.Sprintf(format, v...))
+
+	if l.errorsToSlack && l.slackWeebHook != "" {
+		text := fmt.Sprintf(format, v...)
+		go SendAlert(l.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	l.Close()
 	os.Exit(1)
+}
+
+// SetSlackWeebhook configures the slack webhook used to report errors
+func (l *Logger) SetSlackWeebhook(s string) {
+	l.slackWeebHook = s
+}
+
+// EnableErrorsToSlack enable/disable the option to automatically
+// log the errors to the configured slack channel
+func (l *Logger) EnableErrorsToSlack(b bool) {
+	l.errorsToSlack = b
+}
+
+// LogToSlack sends a message to the configured channel, if it's enabled
+func (l *Logger) LogToSlack(webHook, title, text string) {
+	go func() {
+		if err := SendAlert(webHook, "", title, ColorGood, text); err != nil {
+			l.Errorf("Found an error sending notification to Slack: %s", err)
+		}
+	}()
 }
 
 // SetFlags sets the output flags for the logger.
@@ -306,55 +388,101 @@ func Infof(format string, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Print.
 func Warning(v ...interface{}) {
 	defaultLogger.output(sWarning, 0, fmt.Sprint(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // WarningDepth acts as Warning but uses depth to determine which call frame to log.
 // WarningDepth(0, "msg") is the same as Warning("msg").
 func WarningDepth(depth int, v ...interface{}) {
 	defaultLogger.output(sWarning, depth, fmt.Sprint(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Warningln uses the default logger and logs with the Warning severity.
 // Arguments are handled in the manner of fmt.Println.
 func Warningln(v ...interface{}) {
 	defaultLogger.output(sWarning, 0, fmt.Sprintln(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Warningf uses the default logger and logs with the Warning severity.
 // Arguments are handled in the manner of fmt.Printf.
 func Warningf(format string, v ...interface{}) {
 	defaultLogger.output(sWarning, 0, fmt.Sprintf(format, v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprintf(format, v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Warning", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Error uses the default logger and logs with the Error severity.
 // Arguments are handled in the manner of fmt.Print.
 func Error(v ...interface{}) {
 	defaultLogger.output(sError, 0, fmt.Sprint(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // ErrorDepth acts as Error but uses depth to determine which call frame to log.
 // ErrorDepth(0, "msg") is the same as Error("msg").
 func ErrorDepth(depth int, v ...interface{}) {
 	defaultLogger.output(sError, depth, fmt.Sprint(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Errorln uses the default logger and logs with the Error severity.
 // Arguments are handled in the manner of fmt.Println.
 func Errorln(v ...interface{}) {
 	defaultLogger.output(sError, 0, fmt.Sprintln(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
 // Errorf uses the default logger and logs with the Error severity.
 // Arguments are handled in the manner of fmt.Printf.
 func Errorf(format string, v ...interface{}) {
 	defaultLogger.output(sError, 0, fmt.Sprintf(format, v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprintf(format, v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Error", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
 }
 
-// Fatalln uses the default logger, logs with the Fatal severity,
+// Fatal uses the default logger, logs with the Fatal severity,
 // and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Print.
 func Fatal(v ...interface{}) {
 	defaultLogger.output(sFatal, 0, fmt.Sprint(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	defaultLogger.Close()
 	os.Exit(1)
 }
@@ -363,6 +491,12 @@ func Fatal(v ...interface{}) {
 // FatalDepth(0, "msg") is the same as Fatal("msg").
 func FatalDepth(depth int, v ...interface{}) {
 	defaultLogger.output(sFatal, depth, fmt.Sprint(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	defaultLogger.Close()
 	os.Exit(1)
 }
@@ -372,6 +506,12 @@ func FatalDepth(depth int, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Println.
 func Fatalln(v ...interface{}) {
 	defaultLogger.output(sFatal, 0, fmt.Sprintln(v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprint(v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	defaultLogger.Close()
 	os.Exit(1)
 }
@@ -381,6 +521,12 @@ func Fatalln(v ...interface{}) {
 // Arguments are handled in the manner of fmt.Printf.
 func Fatalf(format string, v ...interface{}) {
 	defaultLogger.output(sFatal, 0, fmt.Sprintf(format, v...))
+
+	if defaultLogger.errorsToSlack && defaultLogger.slackWeebHook != "" {
+		text := fmt.Sprintf(format, v...)
+		go SendAlert(defaultLogger.slackWeebHook, "", "Fatal", ColorWarning, fmt.Sprintf("`%s`", text))
+	}
+
 	defaultLogger.Close()
 	os.Exit(1)
 }

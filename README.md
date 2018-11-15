@@ -82,4 +82,9 @@ func main() {
 }
 ```
 
+## Slack ##
+
+This fork added a handy integration with Slack. If enabled, all logged messages with Warning, Error and Fatal are sent to Slack,
+using the provided webhook.
+
 More info: https://golang.org/pkg/log/#pkg-constants
