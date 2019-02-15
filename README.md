@@ -1,5 +1,5 @@
 # logger #
-Logger is a simple cross platform Go logging library for Windows, Linux, and
+Logger is a simple cross platform Go logging library for Windows, Linux, FreeBSD, and
 macOS, it can log to the Windows event log, Linux/macOS syslog, and an io.Writer.
 
 This is not an official Google product.

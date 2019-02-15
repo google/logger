@@ -1,4 +1,4 @@
-// +build linux darwin
+// +build linux darwin freebsd
 
 /*
 Copyright 2016 Google Inc. All Rights Reserved.
