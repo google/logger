@@ -76,12 +76,9 @@ func init() {
 // when closing the logger.
 func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	var il, wl, el io.Writer
+	var syslogErr error
 	if systemLog {
-		var err error
-		il, wl, el, err = setup(name)
-		if err != nil {
-			log.Fatal(err)
-		}
+		il, wl, el, syslogErr = setup(name)
 	}
 
 	iLogs := []io.Writer{logFile}
@@ -120,6 +117,10 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	defer logLock.Unlock()
 	if !defaultLogger.initialized {
 		defaultLogger = &l
+	}
+
+	if syslogErr != nil {
+		Error(syslogErr)
 	}
 
 	return &l
