@@ -126,6 +126,11 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	return &l
 }
 
+// Close closes the default logger.
+func Close() {
+	defaultLogger.Close()
+}
+
 // A Logger represents an active logging object. Multiple loggers can be used
 // simultaneously even if they are using the same same writers.
 type Logger struct {
@@ -160,6 +165,11 @@ func (l *Logger) output(s severity, depth int, txt string) {
 func (l *Logger) Close() {
 	logLock.Lock()
 	defer logLock.Unlock()
+
+	if !l.initialized {
+		return
+	}
+
 	for _, c := range l.closers {
 		if err := c.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to close log %v: %v\n", c, err)
