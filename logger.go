@@ -113,14 +113,14 @@ func Init(name string, verbose, systemLog bool, logFile io.Writer) *Logger {
 	}
 	l.initialized = true
 
+	if syslogErr != nil {
+		l.Error(syslogErr)
+	}
+
 	logLock.Lock()
 	defer logLock.Unlock()
 	if !defaultLogger.initialized {
 		defaultLogger = &l
-	}
-
-	if syslogErr != nil {
-		Error(syslogErr)
 	}
 
 	return &l
