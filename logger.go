@@ -341,17 +341,13 @@ func SetFlags(flag int) {
 // SetLevel sets the verbosity level for verbose info logging in the
 // default logger.
 func SetLevel(lvl Level) {
-	defaultLogger.level = lvl
-	defaultLogger.output(sInfo, 0, fmt.Sprintf("Info verbosity set to %d", lvl))
+	defaultLogger.SetLevel(lvl)
 }
 
 // V generates a log record depends on the setting of the Level or none
 // by default using the default logger.
 func V(lvl Level) Verbose {
-	return Verbose{
-		enabled: defaultLogger.level >= lvl,
-		logger:  defaultLogger,
-	}
+	return defaultLogger.V(lvl)
 }
 
 // Info uses the default logger and logs with the Info severity.
