@@ -131,6 +131,10 @@ func Close() {
 	defaultLogger.Close()
 }
 
+// Level describes the level of verbosity for info messages when using
+// V style logging. See documentation for the V function for more information.
+type Level int
+
 // A Logger represents an active logging object. Multiple loggers can be used
 // simultaneously even if they are using the same same writers.
 type Logger struct {
@@ -140,6 +144,7 @@ type Logger struct {
 	fatalLog    *log.Logger
 	closers     []io.Closer
 	initialized bool
+	level       Level
 }
 
 func (l *Logger) output(s severity, depth int, txt string) {
@@ -175,6 +180,12 @@ func (l *Logger) Close() {
 			fmt.Fprintf(os.Stderr, "Failed to close log %v: %v\n", c, err)
 		}
 	}
+}
+
+// SetLevel sets the verbosity level for verbose info logging.
+func (l *Logger) SetLevel(lvl Level) {
+	l.level = lvl
+	l.output(sInfo, 0, fmt.Sprintf("Info verbosity set to %d", lvl))
 }
 
 // Info logs with the Info severity.
@@ -281,6 +292,43 @@ func (l *Logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
+// Verbose is a boolean type that implements Infof, etc.
+type Verbose bool
+
+// V generates a log record depends on the setting of the Level; or none default.
+func V(lvl Level) Verbose {
+	return defaultLogger.level >= lvl
+}
+
+// SetLevel sets the verbosity level for verbose info logging.
+func SetLevel(lvl Level) {
+	defaultLogger.level = lvl
+	defaultLogger.output(sInfo, 0, fmt.Sprintf("Info verbosity set to %d", lvl))
+}
+
+// Info is equivalent to the global Info function, guarded by the value of v.
+func (v Verbose) Info(args ...interface{}) {
+	if v {
+		defaultLogger.output(sInfo, 0, fmt.Sprint(args...))
+	}
+}
+
+// Infoln is equivalent to the global Infoln function, guarded by the value of v.
+// See the documentation of V for usage.
+func (v Verbose) Infoln(args ...interface{}) {
+	if v {
+		defaultLogger.output(sInfo, 0, fmt.Sprintln(args...))
+	}
+}
+
+// Infof is equivalent to the global Infof function, guarded by the value of v.
+// See the documentation of V for usage.
+func (v Verbose) Infof(format string, args ...interface{}) {
+	if v {
+		defaultLogger.output(sInfo, 0, fmt.Sprintf(format, args...))
+	}
+}
+
 // SetFlags sets the output flags for the logger.
 func SetFlags(flag int) {
 	defaultLogger.infoLog.SetFlags(flag)
@@ -361,7 +409,7 @@ func Errorf(format string, v ...interface{}) {
 	defaultLogger.output(sError, 0, fmt.Sprintf(format, v...))
 }
 
-// Fatalln uses the default logger, logs with the Fatal severity,
+// Fatal uses the default logger, logs with the Fatal severity,
 // and ends with os.Exit(1).
 // Arguments are handled in the manner of fmt.Print.
 func Fatal(v ...interface{}) {
