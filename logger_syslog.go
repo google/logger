@@ -16,10 +16,11 @@ limitations under the License.
 package logger
 
 import (
+	"io"
 	"log/syslog"
 )
 
-func setup(src string) (*syslog.Writer, *syslog.Writer, *syslog.Writer, error) {
+func setup(src string) (io.Writer, io.Writer, io.Writer, error) {
 	const facility = syslog.LOG_USER
 	il, err := syslog.New(facility|syslog.LOG_NOTICE, src)
 	if err != nil {
