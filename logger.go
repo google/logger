@@ -142,7 +142,7 @@ type Verbose struct {
 }
 
 // A Logger represents an active logging object. Multiple loggers can be used
-// simultaneously even if they are using the same same writers.
+// simultaneously even if they are using the same writers.
 type Logger struct {
 	infoLog     *log.Logger
 	warningLog  *log.Logger
