@@ -15,6 +15,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"golang.org/x/sys/windows"
@@ -44,7 +45,7 @@ func (w *writer) Close() error {
 	return w.el.Close()
 }
 
-func newW(pri severity, src string) (*writer, error) {
+func newW(pri severity, src string) (io.WriteCloser, error) {
 	// Continue if we receive "registry key already exists" or if we get
 	// ERROR_ACCESS_DENIED so that we can log without administrative permissions
 	// for pre-existing eventlog sources.
@@ -64,7 +65,7 @@ func newW(pri severity, src string) (*writer, error) {
 	}, nil
 }
 
-func setup(src string) (*writer, *writer, *writer, error) {
+func setup(src string) (io.WriteCloser, io.WriteCloser, io.WriteCloser, error) {
 	infoL, err := newW(sInfo, src)
 	if err != nil {
 		return nil, nil, nil, err
