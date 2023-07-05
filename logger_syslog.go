@@ -1,4 +1,4 @@
-// +build linux darwin freebsd
+//go:build unix
 
 /*
 Copyright 2016 Google Inc. All Rights Reserved.
