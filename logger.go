@@ -188,6 +188,14 @@ func (l *Logger) Close() {
 	}
 }
 
+// SetFlags sets the output flags for the logger.
+func (l *Logger) SetFlags(flag int) {
+	l.infoLog.SetFlags(flag)
+	l.warningLog.SetFlags(flag)
+	l.errorLog.SetFlags(flag)
+	l.fatalLog.SetFlags(flag)
+}
+
 // Info logs with the Info severity.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Info(v ...interface{}) {
