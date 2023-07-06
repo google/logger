@@ -307,6 +307,42 @@ func (l *Logger) V(lvl Level) Verbose {
 	}
 }
 
+// AddInfoLogOutput add output destination for info Logger
+func (l *Logger) AddInfoLogOutput(writers ...io.Writer){
+	logLock.Lock()
+	defer logLock.Unlock()
+	l.infoLog.SetOutput(io.MultiWriter(l.infoLog.Writer(), io.MultiWriter(writers...)))
+}
+
+// AddWariningLogOutput add output destination for warining Logger
+func (l *Logger) AddWariningLogOutput(writers ...io.Writer){
+	logLock.Lock()
+	defer logLock.Unlock()
+	l.warningLog.SetOutput(io.MultiWriter(l.warningLog.Writer(), io.MultiWriter(writers...)))
+}
+
+// AddErrorLogOutput add output destination for error Logger
+func (l *Logger) AddErrorLogOutput(writers ...io.Writer){
+	logLock.Lock()
+	defer logLock.Unlock()
+	l.errorLog.SetOutput(io.MultiWriter(l.errorLog.Writer(), io.MultiWriter(writers...)))
+}
+
+// AddFatalLogOutput add output destination for fatal Logger
+func (l *Logger) AddFatalLogOutput(writers ...io.Writer){
+	logLock.Lock()
+	defer logLock.Unlock()
+	l.fatalLog.SetOutput(io.MultiWriter(l.fatalLog.Writer(), io.MultiWriter(writers...)))
+}
+
+// AddOutput add output destination for all level Logger
+func (l *Logger) AddOutput(writers ...io.Writer){
+	l.AddInfoLogOutput(writers...)
+	l.AddWariningLogOutput(writers...)
+	l.AddErrorLogOutput(writers...)
+	l.AddFatalLogOutput(writers...)
+}
+
 // Info is equivalent to the global Info function, guarded by the value of v.
 func (v Verbose) Info(args ...interface{}) {
 	if v.enabled {
